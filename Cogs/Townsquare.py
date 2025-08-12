@@ -183,6 +183,13 @@ class Townsquare(commands.Cog):
         else:
             self.emoji["bureaucrat"] = nextcord.PartialEmoji.from_str('\U0001f4ce')  # 📎
             await self.helper.log("Bureaucrat emoji not found, using default")
+        banshee_emoji = get(self.helper.Guild.emojis, name="banshee")
+        if banshee_emoji is not None:
+            self.emoji["banshee"] = nextcord.PartialEmoji.from_str(
+                '{emoji.name}:{emoji.id}'.format(emoji=banshee_emoji))
+        else:
+            self.emoji["banshee"] = nextcord.PartialEmoji.from_str('\U0001f47b')  # 👻
+            await self.helper.log("Banshee emoji not found, using default")
         organ_grinder_emoji = get(self.helper.Guild.emojis, name="organ_grinder")
         if organ_grinder_emoji is not None:
             self.emoji["organ_grinder"] = nextcord.PartialEmoji.from_str(
@@ -190,13 +197,11 @@ class Townsquare(commands.Cog):
         else:
             self.emoji["organ_grinder"] = nextcord.PartialEmoji.from_str('\U0001f648')  # 🙈
             await self.helper.log("Organ grinder emoji not found, using default")
-
+  
     def update_storage(self):
         json_data = {}
         if self.town_square:
             json_data = self.town_square.to_dict()
-        else:
-            json_data = {}
         with open(self.TownSquareStorage, 'w') as f:
             json.dump(json_data, f, indent=2)
 
@@ -438,7 +443,6 @@ class Townsquare(commands.Cog):
                 if player in [tm.member for tm in thread_members]:
                     await thread.add_user(substitute)
             logging.debug(f"Substituted {player} with {substitute} in livetext")
-            # self.update_storage()
             await utility.finish_processing(ctx)
         else:
             await utility.deny_command(ctx, "You are not the storyteller for this game")
@@ -474,7 +478,7 @@ class Townsquare(commands.Cog):
                                   f"Nomination type is now "
                                   f"{'new noms' if self.town_square.new_noms else 'old noms'}")
         else:
-            await utility.deny_command(ctx, "You must be the Storyteller to toggle player nominations")
+            await utility.deny_command(ctx, "You must be the Storyteller to toggle player nomination type")
             
     @commands.command()
     async def Nominate(self, ctx: commands.Context,nominee_identifier: str, 
