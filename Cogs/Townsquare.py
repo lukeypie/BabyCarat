@@ -166,13 +166,15 @@ class Townsquare(commands.Cog):
         self.emoji = {}
         shroud_emoji = get(self.helper.Guild.emojis, name="shroud")
         if shroud_emoji is not None:
-            self.emoji["shroud"] = nextcord.PartialEmoji.from_str('{emoji.name}:{emoji.id}'.format(emoji=shroud_emoji))
+            self.emoji["shroud"] = nextcord.PartialEmoji.from_str(
+                '{emoji.name}:{emoji.id}'.format(emoji=shroud_emoji))
         else:
             self.emoji["shroud"] = nextcord.PartialEmoji.from_str('\U0001F480')  # 💀
             await self.helper.log("Shroud emoji not found, using default")
         thief_emoji = get(self.helper.Guild.emojis, name="thief")
         if thief_emoji is not None:
-            self.emoji["thief"] = nextcord.PartialEmoji.from_str('{emoji.name}:{emoji.id}'.format(emoji=thief_emoji))
+            self.emoji["thief"] = nextcord.PartialEmoji.from_str(
+                '{emoji.name}:{emoji.id}'.format(emoji=thief_emoji))
         else:
             self.emoji["thief"] = nextcord.PartialEmoji.from_str('\U0001F48E')  # 💎
             await self.helper.log("Thief emoji not found, using default")
