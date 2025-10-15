@@ -26,8 +26,8 @@ class Signup(commands.Cog):
         st_names = [st.display_name for st in st_role.members]
         player_role = self.helper.PlayerRole
         player_names = [player.display_name for player in player_role.members]
-        kibitz_role = self.helper.KibitzRole
-        kibitz_names = [kibitzer.display_name for kibitzer in kibitz_role.members]
+        #kibitz_role = self.helper.KibitzRole
+        #kibitz_names = [kibitzer.display_name for kibitzer in kibitz_role.members]
 
         output_string = f"Players\n" \
                         f"Storyteller:\n"
@@ -36,8 +36,8 @@ class Signup(commands.Cog):
         output_string += "\nPlayers:\n"
         output_string += "\n".join(player_names)
 
-        output_string += "\nKibitz members:\n"
-        output_string += "\n".join(kibitz_names)
+        #output_string += "\nKibitz members:\n"
+        #output_string += "\n".join(kibitz_names)
 
         dm_success = await utility.dm_user(ctx.author, output_string)
         if not dm_success:
@@ -48,32 +48,33 @@ class Signup(commands.Cog):
     async def StartSignups(self, ctx: commands.Context):
         """Posts a message listing the signed up players in the appropriate game channel, with buttons that players can use to sign up or leave the game.
         If players are added or removed in other ways, may need to be updated explicitly with the appropriate button to
-         reflect those changes. Note that if a parameter contains spaces, you have to surround it with quotes."""
-        # React on Approval
-        await utility.start_processing(ctx)
-        # Post Signup Page
-        st_names = [st.display_name for st in self.helper.STRole.members] if len(self.helper.STRole.members) != 0 else ["unknown"]
-        player_list = self.helper.PlayerRole.members
-        embed = nextcord.Embed(title="Livetext Game Sign Up",
-                                description="Ran by " + ", ".join(st_names) +
-                                            f"\nPress {green_square_emoji} to sign up for the game"
-                                            f"\nPress {red_square_emoji} to remove yourself from the game"
-                                            f"\nPress {refresh_emoji} if the list needs updating "
-                                            "(if a command is used to assign roles)",
-                                color=0xff0000)
-        for i, player in enumerate(player_list):
-            name = player.display_name
-            embed.add_field(name=str(i + 1) + ". " + str(name),
-                            value=f"{player_list[i].mention} has signed up",
-                            inline=False)
-        await self.helper.GameChannel.send(embed=embed, view=SignupView(self.helper))
-        # React for completion
-        await utility.finish_processing(ctx)
-
+         reflect those changes."""
+        if ctx.channel == self.helper.GameChannel:
+            await utility.start_processing(ctx)
+            # Post Signup Page
+            st_names = [st.display_name for st in self.helper.STRole.members] if len(self.helper.STRole.members) != 0 else ["unknown"]
+            player_list = self.helper.PlayerRole.members
+            embed = nextcord.Embed(title="Livetext Game Sign Up",
+                                    description="Ran by " + ", ".join(st_names) +
+                                                f"\nPress {green_square_emoji} to sign up for the game"
+                                                f"\nPress {red_square_emoji} to remove yourself from the game"
+                                                f"\nPress {refresh_emoji} if the list needs updating "
+                                                "(if a command is used to assign roles)",
+                                    color=0xff0000)
+            for i, player in enumerate(player_list):
+                name = player.display_name
+                embed.add_field(name=str(i + 1) + ". " + str(name),
+                                value=f"{player_list[i].mention} has signed up",
+                                inline=False)
+            await self.helper.GameChannel.send(embed=embed, view=SignupView(self.helper))
+            await utility.finish_processing(ctx)
+        else:
+            utility.deny_command(ctx, "This command is exclusive to livetext and hence only usable in that channel.")         
+            
 
 class SignupView(nextcord.ui.View):
     def __init__(self, helper: utility.Helper):
-        super().__init__(timeout=None)  # for persistence ***might change to 1h
+        super().__init__(timeout=60)  # 1hr, stops old signups being used
         self.helper = helper
 
     async def on_error(self, error: Exception, item: nextcord.ui.Item, interaction: nextcord.Interaction) -> None:
@@ -84,12 +85,11 @@ class SignupView(nextcord.ui.View):
 
     @nextcord.ui.button(label="Sign Up", custom_id="Sign_Up_Command", style=nextcord.ButtonStyle.green)
     async def signup_callback(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
-        # Find which game the sign-up page relates to
         await interaction.response.send_message(content=f"{button.label} has been selected!",
                                                 ephemeral=True)
         game_role = self.helper.PlayerRole
         st_role = self.helper.STRole
-        kibitz_role = self.helper.KibitzRole
+        #kibitz_role = self.helper.KibitzRole
 
         # Sign up command
         if game_role in interaction.user.roles:
@@ -102,7 +102,7 @@ class SignupView(nextcord.ui.View):
             pass
         else:
             await interaction.user.add_roles(game_role)
-            await interaction.user.remove_roles(kibitz_role)
+            #await interaction.user.remove_roles(kibitz_role)
             await self.update_signup_sheet(interaction.message)
             for st in st_role.members:
                 await utility.dm_user(st,
@@ -113,13 +113,11 @@ class SignupView(nextcord.ui.View):
 
     @nextcord.ui.button(label="Leave Game", custom_id="Leave_Game_Command", style=nextcord.ButtonStyle.red)
     async def leave_callback(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
-        # Find which game the sign-up page relates to
         await interaction.response.send_message(content=f"{button.label} has been selected!",
                                                 ephemeral=True)
         game_role = self.helper.PlayerRole
         st_role = self.helper.STRole
 
-        # Find the connected Game
         if game_role not in interaction.user.roles:
             await utility.dm_user(interaction.user, "You haven't signed up")
         elif interaction.user.bot:
@@ -130,10 +128,10 @@ class SignupView(nextcord.ui.View):
             for st in st_role.members:
                 await utility.dm_user(st,
                                       f"{interaction.user.display_name} ({interaction.user.name}) "
-                                      f"has removed themself from livetext")
+                                      f"has removed themself from the livetext sign ups")
             await self.helper.log(
                 f"{interaction.user.display_name} ({interaction.user.name}) "
-                f"has removed themself from livetext")
+                f"has removed themself from the livetext sign ups")
 
     @nextcord.ui.button(label="Refresh List", custom_id="Refresh_Command", style=nextcord.ButtonStyle.gray,
                         emoji=refresh_emoji)

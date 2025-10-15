@@ -56,17 +56,17 @@ class Helper:
         load_dotenv()
         self.Guild = get(bot.guilds, id=int(os.environ['GUILD_ID']))
         self.GameChannel = get(self.Guild.channels, id=int(os.environ['GAME_CHANNEL_ID']))
-        self.KibitzChannel = get(self.Guild.channels, id=int(os.environ['KIBITZ_CHANNEL_ID']))
+        #self.KibitzChannel = get(self.Guild.channels, id=int(os.environ['KIBITZ_CHANNEL_ID']))
         self.STRole = get(self.Guild.roles, id=int(os.environ['ST_ROLE_ID']))
         self.PlayerRole = get(self.Guild.roles, id=int(os.environ['PLAYER_ROLE_ID']))
-        self.KibitzRole = get(self.Guild.roles, id=int(os.environ['KIBITZ_ROLE_ID']))
+        #self.KibitzRole = get(self.Guild.roles, id=int(os.environ['KIBITZ_ROLE_ID']))
         self.ModRole = get(self.Guild.roles, id=int(os.environ['DOOMSAYER_ROLE_ID']))
         self.OwnerID = int(os.environ['OWNER_ID'])
         self.DevIDs = list(map(int, os.environ['DEVELOPERIDS'].split()))
         self.LogChannel = get(self.Guild.channels, id=int(os.environ['LOG_CHANNEL_ID']))
         self.StorageLocation = os.environ['STORAGE_LOCATION']
-        if None in [self.Guild, self.GameChannel, self.KibitzChannel, self.STRole, self.PlayerRole, 
-                    self.KibitzRole, self.ModRole, self.OwnerID, self.LogChannel, self.StorageLocation]:
+        if None in [self.Guild, self.GameChannel, self.STRole, self.PlayerRole, self.ModRole, 
+                    self.OwnerID, self.LogChannel, self.StorageLocation]:
             logging.error("Failed to find required discord entity. Check .env file is correct and Guild is set up")
             raise EnvironmentError
 

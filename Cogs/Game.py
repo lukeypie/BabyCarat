@@ -12,49 +12,70 @@ class Game(commands.Cog):
         self.bot = bot
         self.helper = helper
 
-    @commands.command()
-    async def OpenKibitz(self, ctx):
-        """Makes the kibitz channel to the game visible to the public.
-        Players will still need to remove their game role to see it. Use after the game has concluded.
-        Will also send a message reminding players to give feedback for the ST and provide a link to do so.
-        In most cases, EndGame may be the more appropriate command."""
-        if self.helper.authorize_st_command(ctx.author):
-            await utility.start_processing(ctx)
+    # @commands.command()
+    # async def OpenKibitz(self, ctx: commands.Context):
+    #     """Makes the kibitz channel to the game visible to the public.
+    #     Players will still need to remove their game role to see it. Use after the game has concluded.
+    #     Will also send a message reminding players to give feedback for the ST and provide a link to do so.
+    #     In most cases, EndGame may be the more appropriate command."""
+    #     if self.helper.authorize_st_command(ctx.author):
+    #         await utility.start_processing(ctx)
+    #         townsfolk_role = self.helper.Guild.default_role
+    #         kibitz_channel = self.helper.KibitzChannel
+    #         await kibitz_channel.set_permissions(townsfolk_role, view_channel=True)
 
-            # Change permission of Kibitz to allow Townsfolk to view
-            townsfolk_role = self.helper.Guild.default_role
-            kibitz_channel = self.helper.KibitzChannel
-            await kibitz_channel.set_permissions(townsfolk_role, view_channel=True)
+    #         # React for completion
+    #         await utility.finish_processing(ctx)
+    #     else:
+    #         # React on Disapproval
+    #         await utility.deny_command(ctx, "You are not the current ST")
 
-            # React for completion
-            await utility.finish_processing(ctx)
-        else:
-            # React on Disapproval
-            await utility.deny_command(ctx, "You are not the current ST")
+    #     await self.helper.log(f"{ctx.author.mention} has run the OpenKibitz Command in livetext")
 
-        await self.helper.log(f"{ctx.author.mention} has run the OpenKibitz Command in livetext")
+    # @commands.command()
+    # async def CloseKibitz(self, ctx: commands.Context):
+    #     """Makes the kibitz channel to the game hidden from the public.
+    #     This is typically already the case when you claim a grimoire, but might not be in some cases. Make sure none of
+    #      your players have the kibitz role, as they could still see the channel in that case."""
+    #     if self.helper.authorize_st_command(ctx.author):
+    #         # React on Approval
+    #         await utility.start_processing(ctx)
 
-    @commands.command()
-    async def CloseKibitz(self, ctx):
-        """Makes the kibitz channel to the game hidden from the public.
-        This is typically already the case when you claim a grimoire, but might not be in some cases. Make sure none of
-         your players have the kibitz role, as they could still see the channel in that case."""
-        if self.helper.authorize_st_command(ctx.author):
-            # React on Approval
-            await utility.start_processing(ctx)
+    #         # Change permission of Kibitz to allow Townsfolk to not view
+    #         townsfolk_role = self.helper.Guild.default_role
 
-            # Change permission of Kibitz to allow Townsfolk to not view
-            townsfolk_role = self.helper.Guild.default_role
+    #         kibitz_channel = self.helper.KibitzChannel
+    #         await kibitz_channel.set_permissions(townsfolk_role, view_channel=False)
 
-            kibitz_channel = self.helper.KibitzChannel
-            await kibitz_channel.set_permissions(townsfolk_role, view_channel=False)
+    #         # React for completion
+    #         await utility.finish_processing(ctx)
+    #     else:
+    #         await utility.deny_command(ctx, "You are not the current ST")
 
-            # React for completion
-            await utility.finish_processing(ctx)
-        else:
-            await utility.deny_command(ctx, "You are not the current ST")
+    #     await self.helper.log(f"{ctx.author.mention} has run the CloseKibitz Command in livetext")
 
-        await self.helper.log(f"{ctx.author.mention} has run the CloseKibitz Command in livetext")
+    # @commands.command()
+    # async def CreateKibitz(self, ctx: commands.Context, title: str = "Kibitz"):
+    #     """Creates a kibitz thread with a given name (defults to 'Kibitz')."""
+    #     if self.helper.authorize_st_command(ctx.author):
+    #         if self.helper.kibitzThread
+    #         await utility.start_processing(ctx)
+
+    #         if len(title) > 100:
+    #             await utility.dm_user(ctx.author, "Thread title too long, will be shortened")
+
+    #         await self.helper.GameChannel.create_thread(
+    #             name=title[:100],
+    #             type=nextcord.ChannelType.private_thread,
+    #             invitable=False,
+    #             reason=f"Creating kibitz for current livetext game."
+    #         )
+
+    #         await utility.finish_processing(ctx)
+    #     else:
+    #         await utility.deny_command(ctx, "You are not the current ST")
+
+    #     await self.helper.log(f"{ctx.author.mention} has created a kibitz in livetext")
 
     @commands.command()
     async def EndGame(self, ctx: commands.Context):
@@ -67,14 +88,14 @@ class Game(commands.Cog):
             await utility.start_processing(ctx)
 
             # Gather member list & role information
-            kibitz_role = self.helper.KibitzRole
+            #kibitz_role = self.helper.KibitzRole
             game_role = self.helper.PlayerRole
-            members = game_role.members + kibitz_role.members
+            members = game_role.members #+ kibitz_role.members
 
             # Remove roles from non-bot players
             for member in members:
                 if not member.bot:
-                    await member.remove_roles(kibitz_role)
+                    #await member.remove_roles(kibitz_role)
                     await member.remove_roles(game_role)
 
             townsquare: Optional[Townsquare] = self.bot.get_cog("Townsquare")
@@ -88,9 +109,9 @@ class Game(commands.Cog):
                 reminders.update_storage()
 
             # Change permission of Kibitz to allow Townsfolk to view
-            townsfolk_role = self.helper.Guild.default_role
-            kibitz_channel = self.helper.KibitzChannel
-            await kibitz_channel.set_permissions(townsfolk_role, view_channel=True)
+            # townsfolk_role = self.helper.Guild.default_role
+            # kibitz_channel = self.helper.KibitzChannel
+            # await kibitz_channel.set_permissions(townsfolk_role, view_channel=True)
 
             # React for completion
             await utility.finish_processing(ctx)

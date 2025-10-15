@@ -197,17 +197,18 @@ class Townsquare(commands.Cog):
         else:
             self.emoji["organ_grinder"] = nextcord.PartialEmoji.from_str('\U0001f648')  # 🙈
             await self.helper.log("Organ grinder emoji not found, using default")
-  
+
     def update_storage(self):
         json_data = {}
         if self.town_square:
             json_data = self.town_square.to_dict()
+        else:
+            json_data = {}
         with open(self.TownSquareStorage, 'w') as f:
             json.dump(json_data, f, indent=2)
 
     async def log(self, message: str):
-        kibitz = self.helper.KibitzChannel
-        log_thread = get(kibitz.threads, id=self.town_square.log_thread)
+        log_thread = get(self.helper.GameChannel.threads, id=self.town_square.log_thread)
         await log_thread.send((format_dt(utcnow()) + ": " + message)[:2000])
 
     async def update_nom_message(self, nom: Nomination):
@@ -310,18 +311,18 @@ class Townsquare(commands.Cog):
             player_list = [Player(p.id, p.display_name) for p in players]
             st_list = [Player(st.id, st.display_name) for st in self.helper.STRole.members]
             self.town_square = TownSquare(player_list, st_list)
-            kibitz = self.helper.KibitzChannel
+            channel = self.helper.GameChannel
             try:
-                log_thread = await kibitz.create_thread(
+                log_thread = await channel.create_thread(
                     name="Nomination & Vote Logging Thread",
                     auto_archive_duration=60, # 1h
                     type=nextcord.ChannelType.private_thread)
             except nextcord.HTTPException:
-                old_logging_threads = [t for t in kibitz.threads if t.name == "Nomination & Vote Logging Thread"]
+                old_logging_threads = [t for t in channel.threads if t.name == "Nomination & Vote Logging Thread"]
                 old_logging_threads.sort(key=lambda t: t.create_timestamp)
                 try:
                     await old_logging_threads[0].delete()
-                    log_thread = await kibitz.create_thread(
+                    log_thread = await channel.create_thread(
                         name="Nomination & Vote Logging Thread",
                         auto_archive_duration=60, # 1h
                         type=nextcord.ChannelType.private_thread)
@@ -366,6 +367,23 @@ class Townsquare(commands.Cog):
             await self.log(f"{ctx.author.mention} has updated the town square: {new_player_list}")
         else:
             await utility.deny_command(ctx, "You are not the storyteller for this game")
+
+    # WIP
+    # @commands.command()
+    # async def SetSTThread(self, ctx: commands.Context, player: nextcord.Member = None):
+    #     """Sets the thread this command was ran in to the ST thread of the player who ran the command or 
+    #     the person specified by the storyteller, ping only."""
+
+    #     if player:
+    #         if not self.helper.authorize_st_command(ctx.author) and not player == ctx.author:
+    #             utility.deny_command(ctx, "You can't change other players ST threads unless you are an ST.")
+    #         elif not self.helper.PlayerRole in player.roles:
+    #             utility.deny_command(ctx, "Player has not got the game role.")
+    #     elif self.helper.PlayerRole in ctx.author.roles:
+    #         player = ctx.author
+    #     else:
+    #         utility.deny_command(ctx, "You are not an ST or player, please get your respective role to continue.")
+        
 
     def reuse_or_convert_player(self, player: nextcord.Member) -> Player:
         existing_player = next((p for p in self.town_square.players if p.id == player.id), None)
@@ -467,19 +485,6 @@ class Townsquare(commands.Cog):
         else:
             await utility.deny_command(ctx, "You are not the storyteller for this game")
 
-    @commands.command(aliases=["ToggleNomType", "TNomType", "TNominationType"])
-    async def ToggleNominationType(self, ctx: commands.Context):
-        if self.helper.authorize_st_command(ctx.author):
-            await utility.start_processing(ctx)
-            self.town_square.new_noms = not self.town_square.new_noms
-            self.update_storage()
-            await utility.finish_processing(ctx)
-            await utility.dm_user(ctx.author,
-                                  f"Nomination type is now "
-                                  f"{'new noms' if self.town_square.new_noms else 'old noms'}")
-        else:
-            await utility.deny_command(ctx, "You must be the Storyteller to toggle player nomination type")
-            
     @commands.command()
     async def Nominate(self, ctx: commands.Context,nominee_identifier: str, 
                        nominator_identifier: Optional[str]):
@@ -751,8 +756,8 @@ class Townsquare(commands.Cog):
                 return
             st.alias = alias
             self.update_storage()
-            await utility.finish_processing(ctx)
             await self.log(f"{ctx.author.name} has set their alias to {alias}")
+            await utility.finish_processing(ctx)
         else:
             await utility.deny_command(ctx, "You must be a player to set your alias. "
                                             "If you are, the ST may have to add you to the town square.")

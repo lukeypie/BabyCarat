@@ -14,11 +14,10 @@ class Other(commands.Cog):
         self.helper = helper
 
     @commands.command(aliases=("sw",))
-    async def StartWhisper(self, ctx, title: str, players: commands.Greedy[nextcord.Member]):
+    async def StartWhisper(self, ctx: commands.Context, title: str, players: commands.Greedy[nextcord.Member]):
         """Creates a new thread with the specified title and included members"""
         channel = ctx.channel.parent if isinstance(ctx.channel, nextcord.Thread) else ctx.channel
-        auth_perms = channel.permissions_for(ctx.author)
-        if auth_perms.create_private_threads and auth_perms.send_messages_in_threads:
+        if channel.category and channel.category == self.helper.GameChannel.category:
             await utility.start_processing(ctx)
             if len(title) > 100:
                 await utility.dm_user(ctx.author, "Thread title too long, will be shortened")
@@ -29,19 +28,15 @@ class Other(commands.Cog):
             )
             await thread.add_user(ctx.author)
             for player in players:
-                permissions = ctx.channel.permissions_for(player)
-                if permissions.send_messages_in_threads:
-                    await thread.add_user(player)
-                else:
-                    await utility.dm_user(ctx.author, f"{player.display_name} cannot send messages in threads so they "
-                                                      f"were not added to \"{title}\"")
+                await thread.add_user(player)
             await utility.finish_processing(ctx)
         else:
-            await ctx.author.send("You are missing permissions to create or send messages to threads")
+            await ctx.author.send("This is a livetext exclusive command that is only usable within the livetext category, " \
+                                  "use carat's >sw command instead.")
 
     @commands.command()
-    async def CreateThreads(self, ctx, setup_message=None):
-        """Creates a private thread in the game\'s channel for each player.
+    async def CreateThreads(self, ctx: commands.Context, setup_message: str = None):
+        """Creates a private thread in the game's channel for each player.
         The player and all STs are automatically added to each thread. The threads are named "ST Thread [player name]".
         """
         if self.helper.authorize_st_command(ctx.author):
@@ -60,7 +55,7 @@ class Other(commands.Cog):
                     invitable=False,
                     reason=f"Preparing livetext ST Threads"
                 )
-
+                                
                 await thread.add_user(player)
                 for st in self.helper.STRole.members:
                     await thread.add_user(st)
@@ -70,20 +65,20 @@ class Other(commands.Cog):
         else:
             await utility.deny_command(ctx, "You are not the current ST for livetext" )
 
-    @commands.command()
-    async def SendToThreads(self, ctx, message):
-        """Sends the same message to all active ST threads named "ST Thread ___"
-        """
-        if self.helper.authorize_st_command(ctx.author):
-            await utility.start_processing(ctx)
-            threads = self.helper.GameChannel.threads
-            for thread in threads:
-                if "ST Thread" in thread.name:
-                    await thread.send(message)
-            await utility.finish_processing(ctx)
-        else:
-            await utility.deny_command(ctx, "You are not the current ST for livetext")
-
+    # DO NOT USE UNTIL <SetSTThread is complete
+    # @commands.command()
+    # async def SendToThreads(self, ctx: commands.Context, message: str):
+    #     """Sends the same message to all active ST threads named "ST Thread ___"
+    #     """
+    #     if self.helper.authorize_st_command(ctx.author):
+    #         await utility.start_processing(ctx)
+    #         threads = self.helper.GameChannel.threads
+    #         for thread in threads:
+    #             if "ST Thread" in thread.name:
+    #                 await thread.send(message)
+    #         await utility.finish_processing(ctx)
+    #     else:
+    #         await utility.deny_command(ctx, "You are not the current ST for livetext")
 
 #     @commands.command()
 #     async def HelpMe(self, ctx: commands.Context, command_type: typing.Optional[str] = "no-mod"):
