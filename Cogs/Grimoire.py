@@ -13,7 +13,7 @@ class Grimoire(commands.Cog):
         self.bot = bot
         self.helper = helper
 
-    @commands.command()
+    @commands.command(aliases=["ClaimGrim"])
     async def ClaimGrimoire(self, ctx: commands.Context):
         """Grants you the ST role. Fails if there is already an ST."""
         st_role = self.helper.STRole
@@ -38,7 +38,7 @@ class Grimoire(commands.Cog):
                                        )                
         await self.helper.log(f"{ctx.author.mention} has run the ClaimGrimoire Command for livetext")
         
-    @commands.command()
+    @commands.command(aliases=["GiveGrim"])
     async def GiveGrimoire(self, ctx: commands.Context, member: nextcord.Member):
         """Removes the ST role from you and gives it to the given user."""
         if self.helper.authorize_st_command(ctx.author):
@@ -56,7 +56,7 @@ class Grimoire(commands.Cog):
         await self.helper.log(
             f"{ctx.author.mention} has run the GiveGrimoire Command on {member.mention} for livetext")
 
-    @commands.command()
+    @commands.command(aliases=["DropGrim"])
     async def DropGrimoire(self, ctx: commands.Context):
         """Removes the ST role for the game from you.
         Also announces the free channel if there is no other ST."""
@@ -87,7 +87,7 @@ class Grimoire(commands.Cog):
 
         await self.helper.log(f"{ctx.author.mention} has run the DropGrimoire Command for livetext")
 
-    @commands.command()
+    @commands.command(aliases=["ShareGrim"])
     async def ShareGrimoire(self, ctx: commands.Context, member: nextcord.Member):
         """Gives the ST role for the game to the given user without removing it from you.
         Use this if you want to co-ST a game."""
@@ -108,7 +108,7 @@ class Grimoire(commands.Cog):
         await self.helper.log(
             f"{ctx.author.mention} has run the ShareGrimoire Command on {member.mention} for livetext")
         
-    @commands.command()
+    @commands.command(aliases=["RemoveGrim"])
     async def RemoveGrimoire(self, ctx: commands.Context, member: nextcord.Member):
         """Removes the ST role for targeted player"""
 
