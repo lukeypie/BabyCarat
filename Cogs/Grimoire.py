@@ -46,6 +46,11 @@ class Grimoire(commands.Cog):
             st_role = self.helper.STRole
             await member.add_roles(st_role)
             await ctx.author.remove_roles(st_role)
+            townsquare: Optional[Townsquare] = self.bot.get_cog('Townsquare')
+            if townsquare.town_square:
+                townsquare.town_square.sts.remove(ctx.author)
+                townsquare.town_square.sts.append(Player(member.id, member.display_name))
+                townsquare.update_storage()
             await utility.dm_user(ctx.author,
                                   "You have assigned the current ST role for livetext to " + 
                                   member.display_name)
@@ -71,6 +76,8 @@ class Grimoire(commands.Cog):
                     dm_content = """You have removed the current ST role from yourself however you have 
                     not yet ended the game, if this is how it's supposed to be carry on, otherwise please 
                     reclaim the ST role and run <EndGame."""
+                    townsquare.town_square.sts.remove(ctx.author)
+                    townsquare.update_storage()
                 else:
                     #game_cog: Optional[Game] = self.bot.get_cog("Game") #*
                     #await game_cog.OpenKibitz(ctx) #*
@@ -95,8 +102,9 @@ class Grimoire(commands.Cog):
             await utility.start_processing(ctx)
             await member.add_roles(self.helper.STRole)
             townsquare: Optional[Townsquare] = self.bot.get_cog('Townsquare')
-            if townsquare:
+            if townsquare.town_square:
                 townsquare.town_square.sts.append(Player(member.id, member.display_name))
+                townsquare.update_storage()
             dm_content = f"You have assigned the ST role for livetext to {member.display_name}"
             dm_success = await utility.dm_user(ctx.author, dm_content)
             if not dm_success:
@@ -116,6 +124,10 @@ class Grimoire(commands.Cog):
             await utility.start_processing(ctx)
             st_role = self.helper.STRole
             await member.remove_roles(st_role)
+            townsquare: Optional[Townsquare] = self.bot.get_cog('Townsquare')
+            if townsquare.town_square:
+                townsquare.town_square.sts.remove(member)
+                townsquare.update_storage()
             if len(st_role.members) == 0:
                 dm_content = f"""You have removed the current ST role from {member.display_name},however 
                 you have not yet ended the game, if this is how it's supposed to be carry on, otherwise 
