@@ -22,10 +22,10 @@ class Users(commands.Cog):
             for player in players:
                 await player.add_roles(self.helper.PlayerRole)
             await utility.dm_user(ctx.author,
-                                  "You have assigned the game role for livetext to " + ", ".join(player_names))
+                                  "You have assigned the livetext game player role to " + ", ".join(player_names))
             await utility.finish_processing(ctx)
         else:
-            await utility.deny_command(ctx, "You are not the current ST for livetext")
+            await utility.deny_command(ctx, "You are not the current ST")
 
         await self.helper.log(
             f"{ctx.author.mention} has run the AddPlayer command on {', '.join(player_names)} for livetext")
@@ -40,14 +40,13 @@ class Users(commands.Cog):
         player_names = [p.display_name for p in players]
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
-            game_role = self.helper.PlayerRole
             for player in players:
-                await player.remove_roles(game_role)
+                await player.remove_roles(self.helper.PlayerRole)
             await utility.dm_user(ctx.author,
-                                  "You have removed the game role for livetext from " + ", ".join(player_names))
+                                  "You have removed the livetext game player role from " + ", ".join(player_names))
             await utility.finish_processing(ctx)
         else:
-            await utility.deny_command(ctx, "You are not the current ST for livetext")
+            await utility.deny_command(ctx, "You are not the current ST")
 
         await self.helper.log(f"{ctx.author.mention} has run the RemovePlayer command "
                               f"on {', '.join(player_names)} for livetext")
@@ -63,7 +62,7 @@ class Users(commands.Cog):
             for player in players:
                 player.remove_roles(role)
             await utility.dm_user(ctx.author,
-                                  "You have removed the game role for livetext from " + ", ".join(player_names))
+                                  "You have removed the livetext game player role from " + ", ".join(player_names))
         else:
             utility.deny_command(ctx, "You need to be an ST to run this command")
         

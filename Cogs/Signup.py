@@ -26,8 +26,6 @@ class Signup(commands.Cog):
         st_names = [st.display_name for st in st_role.members]
         player_role = self.helper.PlayerRole
         player_names = [player.display_name for player in player_role.members]
-        #kibitz_role = self.helper.KibitzRole
-        #kibitz_names = [kibitzer.display_name for kibitzer in kibitz_role.members]
 
         output_string = f"Players\n" \
                         f"Storyteller:\n"
@@ -35,9 +33,6 @@ class Signup(commands.Cog):
 
         output_string += "\nPlayers:\n"
         output_string += "\n".join(player_names)
-
-        #output_string += "\nKibitz members:\n"
-        #output_string += "\n".join(kibitz_names)
 
         dm_success = await utility.dm_user(ctx.author, output_string)
         if not dm_success:
@@ -51,7 +46,6 @@ class Signup(commands.Cog):
          reflect those changes."""
         if ctx.channel == self.helper.GameChannel:
             await utility.start_processing(ctx)
-            # Post Signup Page
             st_names = [st.display_name for st in self.helper.STRole.members] if len(self.helper.STRole.members) != 0 else ["unknown"]
             player_list = self.helper.PlayerRole.members
             embed = nextcord.Embed(title="Livetext Game Sign Up",
@@ -104,10 +98,6 @@ class SignupView(nextcord.ui.View):
             await interaction.user.add_roles(game_role)
             #await interaction.user.remove_roles(kibitz_role)
             await self.update_signup_sheet(interaction.message)
-            for st in st_role.members:
-                await utility.dm_user(st,
-                                      f"{interaction.user.display_name} ({interaction.user.name}) "
-                                      f"has signed up for livetext")
             await self.helper.log(
                 f"{interaction.user.display_name} ({interaction.user.name}) has signed up for livetext")
 
@@ -125,10 +115,6 @@ class SignupView(nextcord.ui.View):
         else:
             await interaction.user.remove_roles(game_role)
             await self.update_signup_sheet(interaction.message)
-            for st in st_role.members:
-                await utility.dm_user(st,
-                                      f"{interaction.user.display_name} ({interaction.user.name}) "
-                                      f"has removed themself from the livetext sign ups")
             await self.helper.log(
                 f"{interaction.user.display_name} ({interaction.user.name}) "
                 f"has removed themself from the livetext sign ups")

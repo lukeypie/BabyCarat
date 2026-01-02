@@ -487,7 +487,7 @@ class Townsquare(commands.Cog):
         else:
             await utility.deny_command(ctx, "You are not the storyteller for this game")
 
-    @commands.command()
+    @commands.command(aliases=["Nom"])
     async def Nominate(self, ctx: commands.Context,nominee_identifier: str, 
                        nominator_identifier: Optional[str]):
         """Create a nomination for the given nominee.
@@ -655,7 +655,9 @@ class Townsquare(commands.Cog):
                     except UnknownVoteError:
                         player = get(self.helper.Guild.members, 
                                      id=players[self.town_square.current_nomination.player_index].id)
-                        await self.helper.GameChannel.send(f"Unable to lock {player.mention}'s vote, " /
+                        nom_thread = utility.get(self.helper.GameChannel.threads, id = self.town_square.nomination_thread)
+                        if nom_thread:
+                            await nom_thread.send(f"Unable to lock {player.mention}'s vote, "\
                                                             f"please make your vote either 'yes' or 'no'")
                         done = True
                 if self.town_square.current_nomination.player_index == player_no:
@@ -847,7 +849,7 @@ class Townsquare(commands.Cog):
             await utility.deny_command(ctx, "You must be the Storyteller to toggle a player's voting ability")
             
     @commands.command()
-    async def LockVote(self, ctx: commands.context, vote: str = None):
+    async def LockVote(self, ctx: commands.Context, vote: str = None):
         """Locks the next vote in the nomination
         """
         if self.helper.authorize_st_command(ctx.author):

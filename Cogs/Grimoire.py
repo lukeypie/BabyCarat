@@ -65,17 +65,17 @@ class Grimoire(commands.Cog):
     async def DropGrimoire(self, ctx: commands.Context):
         """Removes the ST role for the game from you.
         Also announces the free channel if there is no other ST."""
-
         if self.helper.authorize_st_command(ctx.author):
             # React on Approval
             await utility.start_processing(ctx)
             st_role = self.helper.STRole
+            await ctx.author.remove_roles(st_role)
             if len(st_role.members) == 1:
                 townsquare: Optional[Townsquare] = self.bot.get_cog('Townsquare')
                 if townsquare.town_square:
-                    dm_content = """You have removed the current ST role from yourself however you have 
-                    not yet ended the game, if this is how it's supposed to be carry on, otherwise please 
-                    reclaim the ST role and run <EndGame."""
+                    dm_content = "You have removed the current ST role from yourself however you have "\
+                    "not yet ended the game, if this is how it's supposed to be carry on, otherwise please "\
+                    "reclaim the ST role and run <EndGame."
                     townsquare.town_square.sts.remove(ctx.author)
                     townsquare.update_storage()
                 else:
@@ -84,7 +84,6 @@ class Grimoire(commands.Cog):
                     dm_content = "You have removed the current ST role from yourself for livetext"
             else:
                 dm_content = "You have removed the current ST role from yourself for livetext"
-            await ctx.author.remove_roles(st_role)
             dm_success = await utility.dm_user(ctx.author, dm_content)
             if not dm_success:
                 await ctx.send(content=dm_content, reference=ctx.message)
@@ -119,7 +118,6 @@ class Grimoire(commands.Cog):
     @commands.command(aliases=["RemoveGrim"])
     async def RemoveGrimoire(self, ctx: commands.Context, member: nextcord.Member):
         """Removes the ST role for targeted player"""
-
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
             st_role = self.helper.STRole
@@ -129,9 +127,9 @@ class Grimoire(commands.Cog):
                 townsquare.town_square.sts.remove(member)
                 townsquare.update_storage()
             if len(st_role.members) == 0:
-                dm_content = f"""You have removed the current ST role from {member.display_name},however 
-                you have not yet ended the game, if this is how it's supposed to be carry on, otherwise 
-                please reclaim the ST role and run <EndGame."""
+                dm_content = f"You have removed the current ST role from {member.display_name}, however "\
+                "you have not yet ended the game, if this is how it's supposed to be carry on, otherwise "\
+                "please reclaim the ST role and run <EndGame.""" 
                 dm_success = await utility.dm_user(ctx.author, dm_content)
                 if not dm_success:
                     await ctx.send(content=dm_content, reference=ctx.message)
