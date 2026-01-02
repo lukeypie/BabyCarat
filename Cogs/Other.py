@@ -6,12 +6,36 @@ from nextcord.ext import commands
 import utility
 from Cogs.Townsquare import Townsquare, TownSquare
 
+import os
+import datetime
+from nextcord.utils import utcnow
 
 class Other(commands.Cog):
 
     def __init__(self, bot: commands.Bot, helper: utility.Helper):
         self.bot = bot
         self.helper = helper
+        self.starttimeStorage = os.path.join(self.helper.StorageLocation, "starttime.json")
+
+        if not os.path.exists(self.starttimeStorage):
+            self.startTime = utcnow()
+            with open(self.starttimeStorage, 'w') as f:
+                f.write(self.startTime.strftime())
+        else:
+            with open(self.starttimeStorage, 'r') as f:
+                self.startTime: datetime.datetime = datetime.datetime.strptime(f.read())
+
+    @commands.command()
+    async def SetStart(self, ctx: commands.Context):
+        """Allows the bot to know when a game roughly started, use before any commands are ran.
+        If you forgot to run this, do not run it after ST threads are created as it will mess stuff up.
+        Predominantly used with sub player."""
+        if self.helper.authorize_st_command(ctx.author):
+            self.startTime = utcnow()
+            with open(self.starttimeStorage, 'w') as f:
+                f.write(self.startTime.strftime())
+        else:
+            await utility.deny_command(ctx, "You are not a livetext ST")
 
     @commands.command(aliases=("sw",))
     async def StartWhisper(self, ctx: commands.Context, title: str, players: commands.Greedy[nextcord.Member]):
@@ -21,11 +45,13 @@ class Other(commands.Cog):
             await utility.start_processing(ctx)
             if len(title) > 100:
                 await utility.dm_user(ctx.author, "Thread title too long, will be shortened")
+
             thread = await channel.create_thread(
                 name=title[:100],
                 type=nextcord.ChannelType.private_thread,
                 reason=f"Starting whisper for {ctx.author.display_name}"
             )
+
             await thread.add_user(ctx.author)
             for player in players:
                 await thread.add_user(player)
@@ -48,6 +74,7 @@ class Other(commands.Cog):
                 name = player.display_name
                 if townsquare:
                     name = next((p.alias for p in townsquare.players if p.id == player.id), name)
+
                 thread = await self.helper.GameChannel.create_thread(
                     name=f"ST Thread {name}"[:100],
                     auto_archive_duration=60,  # 1 hr
@@ -63,22 +90,26 @@ class Other(commands.Cog):
                     await thread.send(setup_message)
             await utility.finish_processing(ctx)
         else:
-            await utility.deny_command(ctx, "You are not the current ST for livetext" )
+            await utility.deny_command(ctx, "You are not a livetext ST")
 
-    # DO NOT USE UNTIL <SetSTThread is complete
-    # @commands.command()
-    # async def SendToThreads(self, ctx: commands.Context, message: str):
-    #     """Sends the same message to all active ST threads named "ST Thread ___"
-    #     """
-    #     if self.helper.authorize_st_command(ctx.author):
-    #         await utility.start_processing(ctx)
-    #         threads = self.helper.GameChannel.threads
-    #         for thread in threads:
-    #             if "ST Thread" in thread.name:
-    #                 await thread.send(message)
-    #         await utility.finish_processing(ctx)
-    #     else:
-    #         await utility.deny_command(ctx, "You are not the current ST for livetext")
+    @commands.command()
+    async def SendToThreads(self, ctx: commands.Context, message: str):
+        """Sends the same message to all active ST threads named "ST Thread ___" 
+        created since SetStart was ran or 3 hrs ago, whatever is soonest."""
+        if self.helper.authorize_st_command(ctx.author):
+            await utility.start_processing(ctx)
+
+            default_time = utcnow() - datetime.timedelta(hour = 3)
+            last_set_time = self.startTime
+            min_creation_time = default_time if default_time < last_set_time else last_set_time
+
+            threads = self.helper.GameChannel.threads
+            for thread in threads:
+                if "ST Thread" in thread.name and thread.created_at > min_creation_time:
+                    await thread.send(message)
+            await utility.finish_processing(ctx)
+        else:
+            await utility.deny_command(ctx, "You are not a livetext ST")
 
 #     @commands.command()
 #     async def HelpMe(self, ctx: commands.Context, command_type: typing.Optional[str] = "no-mod"):
