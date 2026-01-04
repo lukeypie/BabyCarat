@@ -105,7 +105,7 @@ class Other(commands.Cog):
 
             threads = self.helper.GameChannel.threads
             for thread in threads:
-                if "ST Thread" in thread.name and thread.created_at > min_creation_time:
+                if "st thread" in thread.name.lower() and thread.created_at > min_creation_time:
                     await thread.send(message)
             await utility.finish_processing(ctx)
         else:
