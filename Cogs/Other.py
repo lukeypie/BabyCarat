@@ -25,18 +25,19 @@ class Other(commands.Cog):
             with open(self.starttimeStorage, 'r') as f:
                 self.startTime: datetime.datetime = datetime.datetime.strptime(f.read(), "%d/%m/%Y, %H:%M:%S").astimezone(tz=None)
 
+    async def record_time(self):
+        """Records current UTC time and stores it"""
+        self.startTime = utcnow()
+        with open(self.starttimeStorage, 'w') as f:
+            f.write(self.startTime.strftime("%d/%m/%Y, %H:%M:%S"))
+
     @commands.command()
     async def SetStart(self, ctx: commands.Context):
-        """Allows the bot to know when a game roughly started, use before any commands are ran.
-        If you forgot to run this, do not run it after ST threads are created as it will mess stuff up.
-        Predominantly used with sub player."""
+        """Allows the bot to know when to consider threads from for <subplayer and <sendtothreads
+        Run this command before any ST threads are made if the bots systems are not being used"""
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
-            
-            self.startTime = utcnow()
-            with open(self.starttimeStorage, 'w') as f:
-                f.write(self.startTime.strftime("%d/%m/%Y, %H:%M:%S"))
-
+            await self.record_time()
             await utility.finish_processing(ctx)
         else:
             await utility.deny_command(ctx, "You are not a livetext ST")

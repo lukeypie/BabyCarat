@@ -61,6 +61,8 @@ class Signup(commands.Cog):
                                 value=f"{player_list[i].mention} has signed up",
                                 inline=False)
             await self.helper.GameChannel.send(embed=embed, view=SignupView(self.helper))
+            other_cog = self.bot.get_cog("Other")
+            await other_cog.record_time()
             await utility.finish_processing(ctx)
         else:
             utility.deny_command(ctx, "This command is exclusive to livetext and hence only usable in that channel.")         
