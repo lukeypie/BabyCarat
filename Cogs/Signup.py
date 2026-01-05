@@ -68,7 +68,7 @@ class Signup(commands.Cog):
 
 class SignupView(nextcord.ui.View):
     def __init__(self, helper: utility.Helper):
-        super().__init__(timeout=3600)  # 1hr, stops old signups being used
+        super().__init__(timeout=60)  # 1hr, stops old signups being used
         self.helper = helper
 
     async def on_error(self, error: Exception, item: nextcord.ui.Item, interaction: nextcord.Interaction) -> None:

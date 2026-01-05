@@ -20,10 +20,10 @@ class Other(commands.Cog):
         if not os.path.exists(self.starttimeStorage):
             self.startTime = utcnow()
             with open(self.starttimeStorage, 'w') as f:
-                f.write(self.startTime.strftime())
+                f.write(self.startTime.strftime("%d/%m/%Y, %H:%M:%S"))
         else:
             with open(self.starttimeStorage, 'r') as f:
-                self.startTime: datetime.datetime = datetime.datetime.strptime(f.read())
+                self.startTime: datetime.datetime = datetime.datetime.strptime(f.read(), "%d/%m/%Y, %H:%M:%S").astimezone(tz=None)
 
     @commands.command()
     async def SetStart(self, ctx: commands.Context):
@@ -31,9 +31,13 @@ class Other(commands.Cog):
         If you forgot to run this, do not run it after ST threads are created as it will mess stuff up.
         Predominantly used with sub player."""
         if self.helper.authorize_st_command(ctx.author):
+            await utility.start_processing(ctx)
+            
             self.startTime = utcnow()
             with open(self.starttimeStorage, 'w') as f:
-                f.write(self.startTime.strftime())
+                f.write(self.startTime.strftime("%d/%m/%Y, %H:%M:%S"))
+
+            await utility.finish_processing(ctx)
         else:
             await utility.deny_command(ctx, "You are not a livetext ST")
 
@@ -99,9 +103,9 @@ class Other(commands.Cog):
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
 
-            default_time = utcnow() - datetime.timedelta(hour = 3)
+            default_time = utcnow() - datetime.timedelta(hours = 3)
             last_set_time = self.startTime
-            min_creation_time = default_time if default_time < last_set_time else last_set_time
+            min_creation_time = default_time if default_time > last_set_time else last_set_time
 
             threads = self.helper.GameChannel.threads
             for thread in threads:
