@@ -384,40 +384,41 @@ class Townsquare(commands.Cog):
         Transfers the position, status, nominations and votes of the exchanged player to the substitute, adds the
         substitute to all threads the exchanged player was in, and adds/removes the game role.
         Can be used without the town square."""
-        if not (self.town_square and self.town_square.sts != []):
+        if not self.town_square:
             await self.SubstitutePlayerNoTownsquare(ctx, player, substitute)
             return
+        
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
+
             player_list = self.town_square.players
             current_player = next((p for p in player_list if p.id == player.id), None)
+            if current_player is None:
+                await utility.deny_command(ctx, f"{player.display_name} is not a participant.")
+                return
             substitute_existing_player = next((p for p in player_list if p.id == substitute.id), None)
             if substitute_existing_player is not None:
                 await utility.deny_command(ctx, f"{substitute.display_name} is already a player.")
                 return
-            if current_player is None:
-                st_list = self.town_square.sts
-                current_st = next((st for st in st_list if st.id == player.id), None)
-                if not current_st:
-                    await utility.deny_command(ctx, f"{player.display_name} is not a participant.")
-                    return
-                current_st.id = substitute.id
-                current_st.alias = substitute.display_name
-            else:
-                game_role = self.helper.PlayerRole
-                await player.remove_roles(game_role, reason="substituted out")
-                await substitute.add_roles(game_role, reason="substituted in")
-                current_player.id = substitute.id
-                current_player.alias = substitute.display_name
-                game_channel = self.helper.GameChannel
-                for thread in game_channel.threads:
-                    thread_members = await thread.fetch_members()
-                    if player in [tm.member for tm in thread_members]:
-                        await thread.add_user(substitute)
-                nom = self.town_square.current_nomination
-                if nom and not nom.finished:
-                    nom.votes[substitute.id] = nom.votes.pop(player.id)
-                    await self.update_nom_message(nom)
+            
+            game_role = self.helper.PlayerRole
+            await player.remove_roles(game_role, reason="substituted out")
+            await substitute.add_roles(game_role, reason="substituted in")
+            current_player.id = substitute.id
+            current_player.alias = substitute.display_name
+
+            game_channel = self.helper.GameChannel
+            other_cog = self.bot.get_cog("Other")
+            for thread in game_channel.threads:
+                thread_members = await thread.fetch_members()
+                if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.startTime:
+                    await thread.add_user(substitute)
+
+            nom = self.town_square.current_nomination
+            if nom and not nom.finished:
+                nom.votes[substitute.id] = nom.votes.pop(player.id)
+                await self.update_nom_message(nom)
+
             await self.log(f"{ctx.author.mention} has substituted {player.display_name} with "
                                         f"{substitute.display_name}")
             logging.debug(f"Substituted {player} with {substitute} in livetext - "
@@ -429,22 +430,27 @@ class Townsquare(commands.Cog):
 
     async def SubstitutePlayerNoTownsquare(self, ctx: commands.Context, player: nextcord.Member,
                                            substitute: nextcord.Member):
-        game_role = self.helper.PlayerRole
-        if game_role not in player.roles:
-            await utility.deny_command(ctx, f"{player.display_name} is not a player.")
-            return
-        elif game_role in substitute.roles:
-            await utility.deny_command(ctx, f"{substitute.display_name} is already a player.")
-            return
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
+
+            game_role = self.helper.PlayerRole
+            if game_role not in player.roles:
+                await utility.deny_command(ctx, f"{player.display_name} is not a player.")
+                return
+            if game_role in substitute.roles:
+                await utility.deny_command(ctx, f"{substitute.display_name} is already a player.")
+                return
+
             await player.remove_roles(game_role, reason="substituted out")
             await substitute.add_roles(game_role, reason="substituted in")
+
             game_channel = self.helper.GameChannel
+            other_cog = self.bot.get_cog("Other")
             for thread in game_channel.threads:
                 thread_members = await thread.fetch_members()
-                if player in [tm.member for tm in thread_members]:
+                if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.startTime:
                     await thread.add_user(substitute)
+                    
             logging.debug(f"Substituted {player} with {substitute} in livetext")
             await utility.finish_processing(ctx)
         else:
