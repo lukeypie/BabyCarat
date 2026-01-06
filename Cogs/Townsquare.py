@@ -14,6 +14,7 @@ from nextcord.ext import commands
 from nextcord.utils import get, utcnow, format_dt
 
 import utility
+from Cogs.Other import Other
 
 not_voted_yet = "-"
 confirmed_yes_vote = "confirmed_yes_vote"
@@ -159,7 +160,7 @@ class Townsquare(commands.Cog):
         else:
             with open(self.TownSquareStorage, 'r') as f:
                 json_data = json.load(f)
-                if not json_data == {}:
+                if json_data != {}:
                     self.town_square = TownSquare.from_dict(json_data)
 
     async def load_emoji(self):
@@ -204,8 +205,6 @@ class Townsquare(commands.Cog):
         json_data = {}
         if self.town_square:
             json_data = self.town_square.to_dict()
-        else:
-            json_data = {}
         with open(self.TownSquareStorage, 'w') as f:
             json.dump(json_data, f, indent=2)
 
@@ -278,7 +277,7 @@ class Townsquare(commands.Cog):
     async def cog_check(self, ctx: commands.Context) -> bool:
         if ctx.command.name in ["SetupTownSquare", "SubstitutePlayer"]:
             return True
-        if not (self.town_square and self.town_square.sts != []):
+        if not self.town_square:
             await utility.deny_command(ctx, "Town Square has not been set up for this game, " \
                                         "please run <SetUpTownSquare to use this functionality")
             return False
@@ -310,10 +309,12 @@ class Townsquare(commands.Cog):
         Use UpdateTownSquare if that is not what you want."""
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
+
             player_list = [Player(p.id, p.display_name) for p in players]
             st_list = [Player(st.id, st.display_name) for st in self.helper.STRole.members]
             self.town_square = TownSquare(player_list, st_list)
             channel = self.helper.GameChannel
+
             try:
                 log_thread = await channel.create_thread(
                     name="Nomination & Vote Logging Thread",
@@ -332,8 +333,10 @@ class Townsquare(commands.Cog):
                     self.town_square = None
                     await utility.deny_command(ctx, "Failed to create logging thread.")
                     return
+                
             for st in self.helper.STRole.members:
                 await log_thread.add_user(st)
+
             self.town_square.log_thread = log_thread.id
             await self.log(f"Town square created: {self.town_square}")
             self.update_storage()
@@ -353,11 +356,13 @@ class Townsquare(commands.Cog):
                 await utility.deny_command(ctx, "No townsquare exists for this game, please run <SetUpTownSquare first.")   
                 return 
             await utility.start_processing(ctx)
+
             new_player_list = [self.reuse_or_convert_player(p) for p in players]
             removed_players = [p for p in self.town_square.players if p not in new_player_list]
             added_players = [p for p in new_player_list if p not in self.town_square.players]
             self.town_square.players = new_player_list
             nom = self.town_square.current_nomination
+
             if nom:
                 for player in removed_players:
                     nom.votes.pop(player.id)
@@ -408,7 +413,7 @@ class Townsquare(commands.Cog):
             current_player.alias = substitute.display_name
 
             game_channel = self.helper.GameChannel
-            other_cog = self.bot.get_cog("Other")
+            other_cog: Other = self.bot.get_cog("Other")
             for thread in game_channel.threads:
                 thread_members = await thread.fetch_members()
                 if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.startTime:
@@ -445,12 +450,12 @@ class Townsquare(commands.Cog):
             await substitute.add_roles(game_role, reason="substituted in")
 
             game_channel = self.helper.GameChannel
-            other_cog = self.bot.get_cog("Other")
+            other_cog: Other = self.bot.get_cog("Other")
             for thread in game_channel.threads:
                 thread_members = await thread.fetch_members()
                 if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.startTime:
                     await thread.add_user(substitute)
-                    
+
             logging.debug(f"Substituted {player} with {substitute} in livetext")
             await utility.finish_processing(ctx)
         else:
@@ -729,6 +734,7 @@ class Townsquare(commands.Cog):
         if len(alias) > 100 or utility.is_mention(alias):
             await utility.deny_command(ctx, f"not an allowed alias: {alias}"[:2000])
             return
+        
         if game_role in ctx.author.roles:
             await utility.start_processing(ctx)
             player = next((p for p in self.town_square.players if p.id == ctx.author.id), None)
@@ -843,7 +849,8 @@ class Townsquare(commands.Cog):
         """
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
-            if not self.town_square.current_nomination or self.town_square.current_nomination.finished:
+            nom = self.town_square.current_nomination
+            if not nom or nom.finished:
                 await utility.deny_command(ctx, "No ongoing nomination")
                 return
             try:
