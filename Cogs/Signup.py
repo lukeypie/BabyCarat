@@ -21,7 +21,7 @@ class Signup(commands.Cog):
 
     @commands.command()
     async def ShowSignUps(self, ctx: commands.Context):
-        """Sends a DM listing the STs, players, and kibitz members of the game."""
+        """Sends a DM listing the STs and players of the game."""
         await utility.start_processing(ctx)
         st_role = self.helper.STRole
         st_names = [st.display_name for st in st_role.members]
@@ -49,6 +49,7 @@ class Signup(commands.Cog):
             await utility.start_processing(ctx)
             st_names = [st.display_name for st in self.helper.STRole.members] if len(self.helper.STRole.members) != 0 else ["unknown"]
             player_list = self.helper.PlayerRole.members
+            
             embed = nextcord.Embed(title="Livetext Game Sign Up",
                                     description="Ran by " + ", ".join(st_names) +
                                                 f"\nPress {green_square_emoji} to sign up for the game"
@@ -62,6 +63,7 @@ class Signup(commands.Cog):
                                 value=f"{player_list[i].mention} has signed up",
                                 inline=False)
             await self.helper.GameChannel.send(embed=embed, view=SignupView(self.helper))
+
             other_cog : Other = self.bot.get_cog("Other")
             await other_cog.record_time()
             await utility.finish_processing(ctx)
