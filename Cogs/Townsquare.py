@@ -416,7 +416,7 @@ class Townsquare(commands.Cog):
             other_cog: Other = self.bot.get_cog("Other")
             for thread in game_channel.threads:
                 thread_members = await thread.fetch_members()
-                if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.startTime:
+                if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.start_time:
                     await thread.add_user(substitute)
 
             nom = self.town_square.current_nomination
@@ -453,7 +453,7 @@ class Townsquare(commands.Cog):
             other_cog: Other = self.bot.get_cog("Other")
             for thread in game_channel.threads:
                 thread_members = await thread.fetch_members()
-                if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.startTime:
+                if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.start_time:
                     await thread.add_user(substitute)
 
             logging.debug(f"Substituted {player} with {substitute} in livetext")

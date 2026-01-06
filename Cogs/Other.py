@@ -15,21 +15,21 @@ class Other(commands.Cog):
     def __init__(self, bot: commands.Bot, helper: utility.Helper):
         self.bot = bot
         self.helper = helper
-        self.starttimeStorage = os.path.join(self.helper.StorageLocation, "starttime.json")
+        self.StarttimeStorage = os.path.join(self.helper.StorageLocation, "starttime.json")
 
-        if not os.path.exists(self.starttimeStorage):
-            self.startTime = utcnow()
-            with open(self.starttimeStorage, 'w') as f:
-                f.write(self.startTime.strftime("%d/%m/%Y, %H:%M:%S"))
+        if not os.path.exists(self.StarttimeStorage):
+            self.start_time = utcnow()
+            with open(self.StarttimeStorage, 'w') as f:
+                f.write(self.start_time.strftime("%d/%m/%Y, %H:%M:%S"))
         else:
-            with open(self.starttimeStorage, 'r') as f:
-                self.startTime: datetime.datetime = datetime.datetime.strptime(f.read(), "%d/%m/%Y, %H:%M:%S").astimezone(tz=None)
+            with open(self.StarttimeStorage, 'r') as f:
+                self.start_time: datetime.datetime = datetime.datetime.strptime(f.read(), "%d/%m/%Y, %H:%M:%S").astimezone(tz=None)
 
     async def record_time(self):
         """Records current UTC time and stores it"""
-        self.startTime = utcnow()
-        with open(self.starttimeStorage, 'w') as f:
-            f.write(self.startTime.strftime("%d/%m/%Y, %H:%M:%S"))
+        self.start_time = utcnow()
+        with open(self.StarttimeStorage, 'w') as f:
+            f.write(self.start_time.strftime("%d/%m/%Y, %H:%M:%S"))
 
     @commands.command()
     async def SetStart(self, ctx: commands.Context):
@@ -105,7 +105,7 @@ class Other(commands.Cog):
             await utility.start_processing(ctx)
 
             default_time = utcnow() - datetime.timedelta(hours = 3)
-            last_set_time = self.startTime
+            last_set_time = self.start_time
             min_creation_time = default_time if default_time > last_set_time else last_set_time
 
             threads = self.helper.GameChannel.threads
