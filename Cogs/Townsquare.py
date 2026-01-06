@@ -370,23 +370,6 @@ class Townsquare(commands.Cog):
         else:
             await utility.deny_command(ctx, "You are not the storyteller for this game")
 
-    # WIP
-    # @commands.command()
-    # async def SetSTThread(self, ctx: commands.Context, player: nextcord.Member = None):
-    #     """Sets the thread this command was ran in to the ST thread of the player who ran the command or 
-    #     the person specified by the storyteller, ping only."""
-
-    #     if player:
-    #         if not self.helper.authorize_st_command(ctx.author) and not player == ctx.author:
-    #             utility.deny_command(ctx, "You can't change other players ST threads unless you are an ST.")
-    #         elif not self.helper.PlayerRole in player.roles:
-    #             utility.deny_command(ctx, "Player has not got the game role.")
-    #     elif self.helper.PlayerRole in ctx.author.roles:
-    #         player = ctx.author
-    #     else:
-    #         utility.deny_command(ctx, "You are not an ST or player, please get your respective role to continue.")
-        
-
     def reuse_or_convert_player(self, player: nextcord.Member) -> Player:
         existing_player = next((p for p in self.town_square.players if p.id == player.id), None)
         if existing_player:
