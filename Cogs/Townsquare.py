@@ -14,7 +14,6 @@ from nextcord.ext import commands
 from nextcord.utils import get, utcnow, format_dt
 
 import utility
-from Cogs.Other import Other
 
 not_voted_yet = "-"
 confirmed_yes_vote = "confirmed_yes_vote"
@@ -413,7 +412,7 @@ class Townsquare(commands.Cog):
             current_player.alias = substitute.display_name
 
             game_channel = self.helper.GameChannel
-            other_cog: Other = self.bot.get_cog("Other")
+            other_cog = self.bot.get_cog("Other")
             for thread in game_channel.threads:
                 thread_members = await thread.fetch_members()
                 if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.start_time:
@@ -450,7 +449,7 @@ class Townsquare(commands.Cog):
             await substitute.add_roles(game_role, reason="substituted in")
 
             game_channel = self.helper.GameChannel
-            other_cog: Other = self.bot.get_cog("Other")
+            other_cog = self.bot.get_cog("Other")
             for thread in game_channel.threads:
                 thread_members = await thread.fetch_members()
                 if player in [tm.member for tm in thread_members] and thread.create_timestamp > other_cog.start_time:
@@ -528,7 +527,7 @@ class Townsquare(commands.Cog):
             nom = Nomination(converted_nominator, converted_nominee, votes)
 
             content, embed = format_nom_message(game_role, self.town_square, nom, self.emoji)
-            nom_message = await nom_thread.send(content=content, embed=embed)
+            nom_message = await nom_thread.send(content=content, embed=embed, view=NominationView(self.helper, self.town_square, self.emoji))
             nom.message = nom_message.id
             self.town_square.current_nomination = nom
             logging.debug(f"Nomination created: in livetext: {nom}")
@@ -599,17 +598,26 @@ class Townsquare(commands.Cog):
             await self.log(f"{ctx.author} has set the vote threshold to {target}")
 
     @commands.command()
-    async def Vote(self, ctx: commands.Context, vote):
+    async def Vote(self, ctx: commands.Context, vote: str, voter_identifier: str = None):
         """Set your vote for the given nominee or nominees."""
-        game_role = self.helper.PlayerRole
-        voter = next((p for p in self.town_square.players if p.id == ctx.author.id), None)
         if self.town_square.organ_grinder and (ctx.channel == self.helper.GameChannel or
                                                              ctx.channel.type == nextcord.ChannelType.public_thread):
             await ctx.message.delete()
             await utility.dm_user(ctx.author, "Please do not vote in public while the Organ Grinder is active. Your "
                                               "vote was not registered.")
-            await self.log(f"{voter.alias} tried to vote '{vote}' in public. Vote was not registered")
+            await self.log(f"{ctx.author.display_name} tried to vote '{vote}' in public. Vote was not registered")
             return
+        
+        game_role = self.helper.PlayerRole
+        if voter_identifier is not None:
+            voter = self.get_game_participant(voter_identifier)
+            if voter is None:
+                await utility.deny_command(ctx, f"Could not clearly identify any player from {voter_identifier}")
+                return
+        else:
+            voter = ctx.author
+        voter = next((p for p in self.town_square.players if p.id == voter.id), None)
+
         if len(vote) > 400:
             await utility.deny_command(ctx, "Your vote is too long. Consider simplifying your condition. If that is "
                                             "somehow impossible, just let the ST know.")
@@ -624,7 +632,8 @@ class Townsquare(commands.Cog):
             await utility.deny_command(ctx, "Nice try. That's a reserved string for internal handling, "
                                             "you cannot set your vote to it.")
             return
-        if game_role in ctx.author.roles:
+        
+        if game_role in ctx.author.roles or self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
             nom = self.town_square.current_nomination
             if not nom or nom.finished:
@@ -633,11 +642,16 @@ class Townsquare(commands.Cog):
             if nom.votes[voter.id].vote in [confirmed_yes_vote, confirmed_no_vote]:
                 await utility.deny_command(ctx, f"Your vote is already locked in and cannot be changed.")
                 return
+            
             nom.votes[voter.id] = Vote(vote)
-            await self.log(f"{ctx.author} has set their vote on the nomination of {nom.nominee.alias} to {vote}")
+            if ctx.author == voter.id:
+                await self.log(f"{ctx.author} has set their vote on the nomination of {nom.nominee.alias} to {vote}")
+            else:
+                await self.log(f"{ctx.author} has set {voter.alias}'s vote on the nomination of {nom.nominee.alias} to {vote}")
             await self.update_nom_message(nom)
+
             players = reordered_players(nom, self.town_square)
-            if ctx.author.id == players[self.town_square.current_nomination.player_index].id: # If player has clockhand on them
+            if voter.id == players[self.town_square.current_nomination.player_index].id: # If player has clockhand on them
                 done = False
                 player_no = len(self.town_square.players)
                 # loops until someone hasn't voted, bot can't figure vote out or all players have been locked
@@ -651,8 +665,8 @@ class Townsquare(commands.Cog):
                                      id=players[self.town_square.current_nomination.player_index].id)
                         nom_thread = utility.get(self.helper.GameChannel.threads, id = self.town_square.nomination_thread)
                         if nom_thread:
-                            await nom_thread.send(f"Unable to lock {player.mention}'s vote, "\
-                                                            f"please make your vote either 'yes' or 'no'")
+                            await nom_thread.send(f"Unable to lock {player.mention}'s vote, "
+                                                  f"please make your vote either 'yes' or 'no'")
                         done = True
                 if self.town_square.current_nomination.player_index == player_no:
                     nom.finished == True
@@ -660,52 +674,8 @@ class Townsquare(commands.Cog):
             self.update_storage()
             await utility.finish_processing(ctx)
         else:
-            await utility.deny_command(ctx, "You must be a player to vote. "
+            await utility.deny_command(ctx, "You must be a player or storyteller to vote. "
                                             "If you are, the ST may have to add you to the town square.")
-
-    @commands.command()
-    async def SetVote(self, ctx: commands.Context, voter_identifier: str,
-                      vote: Optional[str]):
-        """Sets the vote on the given nominee for the given voter to the given vote. If no vote is given, it is simply
-        reset. You must be a storyteller for this. Note that you cannot lock a vote in this way."""
-        if self.helper.authorize_st_command(ctx.author):
-            await utility.start_processing(ctx)
-            nom = self.town_square.current_nomination
-            if not nom or nom.finished:
-                await utility.deny_command(ctx, "No ongoing nominations")
-                return
-            voter = self.get_game_participant(voter_identifier)
-            if not voter:
-                await utility.deny_command(ctx, f"Could not clearly identify any player from {voter_identifier}")
-                return
-            if not vote:
-                vote = not_voted_yet
-            nom.votes[voter.id] = Vote(vote)
-            await self.log(f"{ctx.author} has set the vote of {voter.name} on the nomination of "
-                           f"{nom.nominee.alias}")
-            players = reordered_players(nom, self.town_square)
-            await self.update_nom_message(nom)
-            if voter.id == players[self.town_square.current_nomination.player_index].id: # If player has clockhand on them
-                done = False
-                player_no = len(self.town_square.players)
-                # loops until someone hasn't voted, bot can't figure vote out or all players have been locked
-                while not (done or self.town_square.current_nomination.player_index >= player_no):
-                    try:
-                        await self.LockNextVote()
-                    except NotVotedError:
-                        done = True
-                    except UnknownVoteError:
-                        player = get(self.helper.Guild.members, 
-                                     id=players[self.town_square.current_nomination.player_index].id)
-                        await self.helper.GameChannel.send(f"Unable to lock {player.mention}'s vote, " /
-                                                            f"please make your vote either 'yes' or 'no'")
-                        done = True
-                if self.town_square.current_nomination.player_index == player_no:
-                    nom.finished == True
-                    await self.update_nom_message(nom)
-            await utility.finish_processing(ctx)
-        else:
-            await utility.deny_command(ctx, "You must be the Storyteller to set a vote")
 
     @commands.command(aliases=["CloseNom"])
     async def CloseNomination(self, ctx: commands.Context):
@@ -894,6 +864,74 @@ class Townsquare(commands.Cog):
         self.town_square.auto_lock_votes = not self.town_square.auto_lock_votes
         await utility.finish_processing(ctx)
         
+class NominationView(nextcord.ui.View):
+    def __init__(self, helper: utility.Helper, townsquare: TownSquare, emoji: Dict[str, nextcord.PartialEmoji]):
+        super().__init__(timeout=60) # 1hr 
+        self.helper = helper
+        self.townsquare = townsquare
+        self.emoji = emoji
+
+    async def on_error(self, error: Exception, item: nextcord.ui.Item, interaction: nextcord.Interaction) -> None:
+        traceback_buffer = io.StringIO()
+        traceback.print_exception(type(error), error, error.__traceback__, file=traceback_buffer)
+        traceback_text = traceback_buffer.getvalue()
+        logging.exception(f"Ignoring exception in NominationView:\n{traceback_text}")
+        await interaction.response.send_message(content="Issue registering your vote.", 
+                                                ephemeral=True)
+
+    @nextcord.ui.button(label="Yes", custom_id="Nom_Vote_Yes", style=nextcord.ButtonStyle.green)
+    async def yes_callback(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
+        player = next((p for p in self.townsquare.players if p.id == interaction.user.id), None)
+        if not player:
+            await interaction.response.send_message(content="You are not in the townsquare, ask an ST to fix this",
+                                                    ephemeral=True)
+            return
+        nom = self.townsquare.current_nomination
+        if not nom or nom.finished:
+            await interaction.response.send_message(content="This nominition has already been processed.",
+                                                    ephemeral=True)
+            return
+        if nom.votes[player.id].vote in [confirmed_yes_vote, confirmed_no_vote]:
+            await interaction.response.send_message(content="Your vote is already locked in and cannot be changed.",
+                                                    ephemeral=True)
+            return
+        
+        nom.votes[player.id] = Vote("Yes")
+        await self.update_nomination_view(interaction.message)
+        await interaction.response.send_message(content="Your vote has been registered as 'Yes'",
+                                                ephemeral=True)
+        log_thread = get(self.helper.GameChannel.threads, id=self.townsquare.log_thread)
+        await log_thread.send((format_dt(utcnow()) + ": " + f"{interaction.user} has set "
+                               f"their vote on the nomination of {nom.nominee.alias} to 'Yes'")[:2000])
+
+    @nextcord.ui.button(label="No", custom_id="Nom_Vote_No", style=nextcord.ButtonStyle.red)
+    async def no_callback(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
+        player = next((p for p in self.townsquare.players if p.id == interaction.user.id), None)
+        if not player:
+            await interaction.response.send_message(content="You are not in the townsquare, ask an ST to fix this",
+                                                    ephemeral=True)
+            return
+        nom = self.townsquare.current_nomination
+        if not nom or nom.finished:
+            await interaction.response.send_message(content="This nominition has already been processed.",
+                                                    ephemeral=True)
+            return
+        if nom.votes[player.id].vote in [confirmed_yes_vote, confirmed_no_vote]:
+            await interaction.response.send_message(content="Your vote is already locked in and cannot be changed.",
+                                                    ephemeral=True)
+            return
+        
+        nom.votes[player.id] = Vote("No")
+        await self.update_nomination_view(interaction.message)
+        await interaction.response.send_message(content="Your vote has been registered as 'No'",
+                                                ephemeral=True)
+        log_thread = get(self.helper.GameChannel.threads, id=self.townsquare.log_thread)
+        await log_thread.send((format_dt(utcnow()) + ": " + f"{interaction.user} has set "
+                               f"their vote on the nomination of {nom.nominee.alias} to 'No'")[:2000])
+
+    async def update_nomination_view(self, nomination_message: nextcord.Message):
+        content, embed = format_nom_message(self.helper.PlayerRole, self.townsquare, self.townsquare.current_nomination, self.emoji)
+        await nomination_message.edit(content=content, embed=embed)
 
 
 
