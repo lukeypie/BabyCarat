@@ -424,7 +424,7 @@ class Townsquare(commands.Cog):
                 await self.update_nom_message(nom)
 
             await self.log(f"{ctx.author.mention} has substituted {player.display_name} with "
-                                        f"{substitute.display_name}")
+                           f"{substitute.display_name}")
             logging.debug(f"Substituted {player} with {substitute} in livetext - "
                           f"current town square: {self.town_square}")
             self.update_storage()
@@ -576,7 +576,8 @@ class Townsquare(commands.Cog):
             self.update_storage()
             await self.update_nom_message(nom)
             await utility.finish_processing(ctx)
-            await self.log(f"{ctx.author} has added this defense to the nomination of {nom.nominee.alias}: {defense}")
+            await self.log(f"{ctx.author} has added this defense to the nomination of " 
+                           f"{nom.nominee.alias}: {defense}")
         else:
             await utility.deny_command(ctx, "You must be the ST or nominee to use this command")
 
@@ -605,7 +606,7 @@ class Townsquare(commands.Cog):
             await ctx.message.delete()
             await utility.dm_user(ctx.author, "Please do not vote in public while the Organ Grinder is active. Your "
                                               "vote was not registered.")
-            await self.log(f"{ctx.author.display_name} tried to vote '{vote}' in public. Vote was not registered")
+            await self.log(f"{ctx.author} tried to vote '{vote}' in public. Vote was not registered")
             return
         
         game_role = self.helper.PlayerRole
@@ -645,7 +646,7 @@ class Townsquare(commands.Cog):
             
             nom.votes[voter.id] = Vote(vote)
             if ctx.author == voter.id:
-                await self.log(f"{ctx.author} has set their vote on the nomination of {nom.nominee.alias} to {vote}")
+                await self.log(f"{voter.alias} has set their vote on the nomination of {nom.nominee.alias} to {vote}")
             else:
                 await self.log(f"{ctx.author} has set {voter.alias}'s vote on the nomination of {nom.nominee.alias} to {vote}")
             await self.update_nom_message(nom)
@@ -856,7 +857,7 @@ class Townsquare(commands.Cog):
         if nom.player_index >= len(players):
             nom.finished = True
         await self.update_nom_message(nom)
-        await self.log(f"The vote of {player} has been locked on the nomination of {nom.nominee}") 
+        await self.log(f"The vote of {player.alias} has been locked on the nomination of {nom.nominee.alias}") 
     
     @commands.command(aliases=["TAutoLockVotes", "TALV"])
     async def ToggleAutoLockVotes(self, ctx: commands.context):
@@ -901,7 +902,7 @@ class NominationView(nextcord.ui.View):
         await interaction.response.send_message(content="Your vote has been registered as 'Yes'",
                                                 ephemeral=True)
         log_thread = get(self.helper.GameChannel.threads, id=self.townsquare.log_thread)
-        await log_thread.send((format_dt(utcnow()) + ": " + f"{interaction.user} has set "
+        await log_thread.send((format_dt(utcnow()) + ": " + f"{player.alias} has set "
                                f"their vote on the nomination of {nom.nominee.alias} to 'Yes'")[:2000])
 
     @nextcord.ui.button(label="No", custom_id="Nom_Vote_No", style=nextcord.ButtonStyle.red)
@@ -926,7 +927,7 @@ class NominationView(nextcord.ui.View):
         await interaction.response.send_message(content="Your vote has been registered as 'No'",
                                                 ephemeral=True)
         log_thread = get(self.helper.GameChannel.threads, id=self.townsquare.log_thread)
-        await log_thread.send((format_dt(utcnow()) + ": " + f"{interaction.user} has set "
+        await log_thread.send((format_dt(utcnow()) + ": " + f"{player.alias} has set "
                                f"their vote on the nomination of {nom.nominee.alias} to 'No'")[:2000])
 
     async def update_nomination_view(self, nomination_message: nextcord.Message):
