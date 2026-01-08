@@ -68,13 +68,6 @@ class TownSquare:
     organ_grinder: bool = False
     player_noms_allowed: bool = True
     vote_threshold: int = 0
-    auto_lock_votes: bool = False
-
-class UnknownVoteError(Exception):
-    pass
-
-class NotVotedError(Exception):
-    pass
 
 def format_nom_message(game_role: nextcord.Role, town_square: TownSquare, nom: Nomination,
                        emoji: Dict[str, nextcord.PartialEmoji]) -> (str, nextcord.Embed):
@@ -649,29 +642,8 @@ class Townsquare(commands.Cog):
                 await self.log(f"{voter.alias} has set their vote on the nomination of {nom.nominee.alias} to {vote}")
             else:
                 await self.log(f"{ctx.author} has set {voter.alias}'s vote on the nomination of {nom.nominee.alias} to {vote}")
+            
             await self.update_nom_message(nom)
-
-            players = reordered_players(nom, self.town_square)
-            if voter.id == players[self.town_square.current_nomination.player_index].id: # If player has clockhand on them
-                done = False
-                player_no = len(self.town_square.players)
-                # loops until someone hasn't voted, bot can't figure vote out or all players have been locked
-                while not (done or self.town_square.current_nomination.player_index >= player_no):
-                    try:
-                        await self.LockNextVote()
-                    except NotVotedError:
-                        done = True
-                    except UnknownVoteError:
-                        player = get(self.helper.Guild.members, 
-                                     id=players[self.town_square.current_nomination.player_index].id)
-                        nom_thread = utility.get(self.helper.GameChannel.threads, id = self.town_square.nomination_thread)
-                        if nom_thread:
-                            await nom_thread.send(f"Unable to lock {player.mention}'s vote, "
-                                                  f"please make your vote either 'yes' or 'no'")
-                        done = True
-                if self.town_square.current_nomination.player_index == player_no:
-                    nom.finished == True
-                    await self.update_nom_message(nom)
             self.update_storage()
             await utility.finish_processing(ctx)
         else:
@@ -824,46 +796,32 @@ class Townsquare(commands.Cog):
             if not nom or nom.finished:
                 await utility.deny_command(ctx, "No ongoing nomination")
                 return
-            try:
-                await self.LockNextVote(vote)
-            except UnknownVoteError:
-                await utility.deny_command(ctx, "Unknown vote, please either get the player to change their vote" \
-                                     " to 'yes' or 'no', or manually set it by adding the vote to the end of " \
-                                     "this command e.g. '<LockVote yes'.")
-                return
-            except NotVotedError:
-                await utility.deny_command(ctx, "Player has not voted yet, if needed you can manually fo this by " \
+            
+            players = reordered_players(nom, self.town_square)
+            player = players[nom.player_index]
+            if not vote:
+                vote = nom.votes[player.id].vote.lower()
+            if vote == not_voted_yet:
+                await utility.deny_command(ctx, "Player has not voted yet, if needed you can manually fo this by " 
                                            "adding the vote to the end of this command e.g. '<LockVote yes'.")
                 return
+            if vote == "yes" or vote == "y":
+                nom.votes[player.id].vote = confirmed_yes_vote
+            elif vote == "no" or vote == "n":
+                nom.votes[player.id].vote = confirmed_no_vote
+            else:
+                await utility.deny_command(ctx, "Unknown vote, please either get the player to change their vote" 
+                                     " to 'yes' or 'no', or manually set it by adding the vote to the end of " 
+                                     "this command e.g. '<LockVote yes'.")
+                return
+            nom.player_index += 1
+            if nom.player_index >= len(players):
+                nom.finished = True
+            await self.update_nom_message(nom)
+            await self.log(f"The vote of {player.alias} has been locked on the nomination of {nom.nominee.alias}") 
             await utility.finish_processing(ctx)
         else:
             await utility.deny_command(ctx, "You must be the Storyteller to lock a vote")
-
-    async def LockNextVote(self, vote: str = None):
-        nom = self.town_square.current_nomination
-        players = reordered_players(nom, self.town_square)
-        player = players[nom.player_index]
-        if not vote:
-            vote = nom.votes[player.id].vote.lower()
-        if vote == not_voted_yet:
-            raise NotVotedError
-        if vote == "yes" or vote == "y":
-            nom.votes[player.id].vote = confirmed_yes_vote
-        elif vote == "no" or vote == "n":
-            nom.votes[player.id].vote = confirmed_no_vote
-        else:
-            raise UnknownVoteError
-        nom.player_index += 1
-        if nom.player_index >= len(players):
-            nom.finished = True
-        await self.update_nom_message(nom)
-        await self.log(f"The vote of {player.alias} has been locked on the nomination of {nom.nominee.alias}") 
-    
-    @commands.command(aliases=["TAutoLockVotes", "TALV"])
-    async def ToggleAutoLockVotes(self, ctx: commands.context):
-        await utility.start_processing(ctx)
-        self.town_square.auto_lock_votes = not self.town_square.auto_lock_votes
-        await utility.finish_processing(ctx)
         
 class NominationView(nextcord.ui.View):
     def __init__(self, helper: utility.Helper, townsquare: TownSquare, emoji: Dict[str, nextcord.PartialEmoji]):
