@@ -24,6 +24,10 @@ async def dm_user(user: Union[nextcord.User, nextcord.Member], content: str) -> 
 
 
 async def deny_command(ctx: commands.Context, reason: Optional[str]):
+    try:
+        await ctx.message.remove_reaction(WorkingEmoji, ctx.bot.user)
+    except:
+        pass # don't care if it fails
     await ctx.message.add_reaction(DeniedEmoji)
     if reason is not None:
         await dm_user(ctx.author, reason)
@@ -33,16 +37,15 @@ async def deny_command(ctx: commands.Context, reason: Optional[str]):
 
 
 async def finish_processing(ctx: commands.Context):
-    for reaction in ctx.message.reactions:
-        if reaction.emoji == WorkingEmoji:
-            async for user in reaction.users():
-                if user.bot:
-                    await reaction.remove(user)
+    try:
+        await ctx.message.remove_reaction(WorkingEmoji, ctx.bot.user)
+    except:
+        pass # don't care if it fails
     await ctx.message.add_reaction(CompletedEmoji)
     logging.info(f"The {ctx.command.name} command was used successfully by {ctx.author.name}")
 
 
-async def start_processing(ctx):
+async def start_processing(ctx: commands.Context):
     await ctx.message.add_reaction(WorkingEmoji)
 
 
