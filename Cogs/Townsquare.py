@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import io
 import json
 import logging
@@ -55,6 +56,7 @@ class Nomination:
     player_index: int = 0
     message: int = None
     finished: bool = False
+    pause_votes: bool = False
 
 
 @dataclass_json
@@ -68,6 +70,7 @@ class TownSquare:
     organ_grinder: bool = False
     player_noms_allowed: bool = True
     vote_threshold: int = 0
+    vote_time: int = 5 
 
 def format_nom_message(game_role: nextcord.Role, town_square: TownSquare, nom: Nomination,
                        emoji: Dict[str, nextcord.PartialEmoji]) -> (str, nextcord.Embed):
@@ -786,7 +789,7 @@ class Townsquare(commands.Cog):
         else:
             await utility.deny_command(ctx, "You must be the Storyteller to toggle a player's voting ability")
             
-    @commands.command()
+    @commands.command(aliases = ["Lock"])
     async def LockVote(self, ctx: commands.Context, vote: str = None):
         """Locks the next vote in the nomination
         """
@@ -802,7 +805,7 @@ class Townsquare(commands.Cog):
             if not vote:
                 vote = nom.votes[player.id].vote.lower()
             if vote == not_voted_yet:
-                await utility.deny_command(ctx, "Player has not voted yet, if needed you can manually fo this by " 
+                await utility.deny_command(ctx, "Player has not voted yet, if needed you can manually do this by " 
                                            "adding the vote to the end of this command e.g. '<LockVote yes'.")
                 return
             if vote == "yes" or vote == "y":
@@ -822,6 +825,68 @@ class Townsquare(commands.Cog):
             await utility.finish_processing(ctx)
         else:
             await utility.deny_command(ctx, "You must be the Storyteller to lock a vote")
+        
+    @commands.command()
+    async def CountVotes(self, ctx: commands.Context):
+        """
+        """
+        if self.helper.authorize_st_command(ctx.author):
+            await utility.start_processing(ctx)
+            nom = self.town_square.current_nomination
+            if not nom or nom.finished:
+                await utility.deny_command(ctx, "No ongoing nomination")
+                return
+            
+            nom_thread: nextcord.Thread = get(self.helper.GameChannel.threads, id = self.town_square.nomination_thread)
+            if not nom_thread:
+                await utility.deny_command(ctx, "No nomination thread found.")
+                return
+
+            nom.pause_votes = False
+            vote_time = self.town_square.vote_time
+            players = reordered_players(nom, self.town_square)
+            player_no = len(players)
+            
+            while nom.player_index < player_no:
+                player = players[nom.player_index]
+                player_member: nextcord.Member = get(self.helper.Guild.members, id = player.id)
+                await nom_thread.send(f"{player_member.mention} is next to vote you have "
+                                      f"{vote_time} seconds until your vote is counted!", delete_after=vote_time)
+                    
+                await asyncio.sleep(vote_time)
+
+                if nom.pause_votes:
+                    await utility.deny_command(ctx, f"Count interupted on {player.alias}")
+                    return
+                
+                vote = nom.votes[player.id].vote.lower()
+                if vote == "yes" or vote == "y":
+                    nom.votes[player.id].vote = confirmed_yes_vote
+                else:
+                    nom.votes[player.id].vote = confirmed_no_vote
+
+                nom.player_index += 1
+                await self.update_nom_message(nom)
+                self.update_storage()
+            nom.finished = True
+            self.update_storage()
+            await utility.finish_processing(ctx)
+        else:
+            await utility.deny_command(ctx, "You must be the Storyteller start counting votes")
+
+    @commands.command(aliases = ["Pause", "PauseVoting", "PauseCount"])
+    async def PauseCounting(self, ctx: commands.Context):
+        """Pauses the vote counting
+        """
+        if self.helper.authorize_st_command(ctx.author):
+            await utility.start_processing(ctx)
+            nom = self.town_square.current_nomination
+            if nom:
+                nom.pause_votes = True
+            await utility.finish_processing(ctx)
+        else:
+            await utility.deny_command(ctx, "You must be the Storyteller to pause the votes counting")
+
         
 class NominationView(nextcord.ui.View):
     def __init__(self, helper: utility.Helper, townsquare: TownSquare, emoji: Dict[str, nextcord.PartialEmoji]):
