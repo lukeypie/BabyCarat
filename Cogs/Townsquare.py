@@ -821,6 +821,7 @@ class Townsquare(commands.Cog):
             if nom.player_index >= len(players):
                 nom.finished = True
             await self.update_nom_message(nom)
+            self.update_storage()
             await self.log(f"The vote of {player.alias} has been locked on the nomination of {nom.nominee.alias}") 
             await utility.finish_processing(ctx)
         else:
