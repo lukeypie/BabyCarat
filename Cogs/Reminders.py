@@ -84,13 +84,13 @@ class Reminders(commands.Cog):
             json.dump([item.to_dict() for item in self.reminder_list], f, indent=2)
 
     @commands.command(usage="[event] [times]... <'ping-st'> <'no-player-ping'>")
-    async def SetReminders(self, ctx, *args):
+    async def SetReminders(self, ctx: commands.Context, *args):
         """At the given times, sends reminders to the players how long they have until the event occurs.
         The event argument is optional and defaults to "Whispers close". Times must be given in minutes from the
         current time, either as integer, decimal number or in mm:ss format. You can give any number of times.
         The event is assumed to occur at the latest given time. You can have the reminders also ping Storytellers
-        and/or not ping players by adding 'ping-st'/'no-player-ping'"""
-        # parse arguments
+        and/or not ping players by adding 'ping-st'/'no-player-ping'
+        """
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
             ping_st = "ping-st" in args
@@ -114,7 +114,6 @@ class Reminders(commands.Cog):
                     await utility.deny_command(ctx, "At least one reminder time is required")
                     return
                 
-            # set the reminders
             mention = None
             if not no_player_ping:
                 game_role = self.helper.PlayerRole
@@ -137,7 +136,8 @@ class Reminders(commands.Cog):
 
     @commands.command()
     async def DeleteReminders(self, ctx: commands.Context):
-        """Deletes all reminders."""
+        """Deletes all reminders.
+        """
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
             self.reminder_list = []
@@ -148,7 +148,8 @@ class Reminders(commands.Cog):
 
     @commands.command()
     async def ShowReminders(self, ctx: commands.Context, game_number: str):
-        """Shows all reminders."""
+        """Shows all reminders.
+        """
         await utility.start_processing(ctx)
         reminders = self.reminder_list
         if len(reminders) == 0:

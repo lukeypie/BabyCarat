@@ -26,7 +26,8 @@ class Other(commands.Cog):
                 self.start_time: datetime.datetime = datetime.datetime.strptime(f.read(), "%d/%m/%Y, %H:%M:%S").astimezone(tz=None)
 
     async def record_time(self):
-        """Records current UTC time and stores it"""
+        """Records current UTC time and stores it
+        """
         self.start_time = utcnow()
         with open(self.StarttimeStorage, 'w') as f:
             f.write(self.start_time.strftime("%d/%m/%Y, %H:%M:%S"))
@@ -34,7 +35,8 @@ class Other(commands.Cog):
     @commands.command()
     async def SetStart(self, ctx: commands.Context):
         """Allows the bot to know when to consider threads from for <subplayer and <sendtothreads
-        Run this command before any ST threads are made if the bots systems are not being used"""
+        Run this command before any ST threads are made even if the bots systems are not being used
+        """
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
             await self.record_time()
@@ -44,7 +46,8 @@ class Other(commands.Cog):
 
     @commands.command(aliases=("sw",))
     async def StartWhisper(self, ctx: commands.Context, title: str, players: commands.Greedy[nextcord.Member]):
-        """Creates a new thread with the specified title and included members"""
+        """Creates a new thread with the specified title and included members
+        """
         channel = ctx.channel.parent if isinstance(ctx.channel, nextcord.Thread) else ctx.channel
         if channel.category and channel.category == self.helper.GameChannel.category:
             await utility.start_processing(ctx)
@@ -99,8 +102,9 @@ class Other(commands.Cog):
 
     @commands.command()
     async def SendToThreads(self, ctx: commands.Context, message: str):
-        """Sends the same message to all active ST threads named "ST Thread ___" 
-        created since SetStart was ran or 3 hrs ago, whatever is soonest."""
+        """Sends the same message to all active ST threads with "ST Thread" in the thread name,  
+        that were created since SetStart was ran or 3 hrs ago, whichever is soonest.
+        """
         if self.helper.authorize_st_command(ctx.author):
             await utility.start_processing(ctx)
 

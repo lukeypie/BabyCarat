@@ -11,7 +11,8 @@ class Users(commands.Cog):
 
     @commands.command()
     async def AddPlayer(self, ctx: commands.Context, players: commands.Greedy[nextcord.Member]):
-        """Gives the appropriate game role to the given users."""
+        """Gives the appropriate game role to the given users.
+        """
         if len(players) == 0:
             await utility.dm_user(ctx.author, "Usage: <AddPlayer [at least one user]")
             return
@@ -32,7 +33,8 @@ class Users(commands.Cog):
 
     @commands.command()
     async def RemovePlayer(self, ctx: commands.Context, players: commands.Greedy[nextcord.Member]):
-        """Removes the appropriate game role from the given users."""
+        """Removes the appropriate game role from the given users.
+        """
         if len(players) == 0:
             await utility.dm_user(ctx.author, "Usage: <RemovePlayer [at least one user]")
             return
@@ -53,7 +55,8 @@ class Users(commands.Cog):
 
     @commands.command()
     async def WipePlayers(self, ctx: commands.Context):
-        """Removes the game role from everyone, useful for when a game doesn't fire."""
+        """Removes the game role from everyone, useful for when a game doesn't fire.
+        """
         if self.helper.authorize_st_command(ctx.author):
             utility.start_processing(ctx)
             role = self.helper.PlayerRole

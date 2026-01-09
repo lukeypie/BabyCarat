@@ -82,17 +82,15 @@ class Game(commands.Cog):
         """Opens Kibitz to the public and cleans up after the game.
         This includes removing the game role from players and the kibitz role from kibitzers, sending a message
         reminding players to give feedback for the ST with a link to do so,
-        and resetting the town square if there is one."""
+        and resetting the town square if there is one.
+        """
         if self.helper.authorize_st_command(ctx.author):
-            # React on Approval
             await utility.start_processing(ctx)
 
-            # Gather member list & role information
             #kibitz_role = self.helper.KibitzRole
             game_role = self.helper.PlayerRole
             members = game_role.members #+ kibitz_role.members
 
-            # Remove roles from non-bot players
             for member in members:
                 if not member.bot:
                     #await member.remove_roles(kibitz_role)
@@ -113,11 +111,9 @@ class Game(commands.Cog):
             # kibitz_channel = self.helper.KibitzChannel
             # await kibitz_channel.set_permissions(townsfolk_role, view_channel=True)
 
-            # React for completion
             await utility.finish_processing(ctx)
 
         else:
-            # React on Disapproval
             await utility.deny_command(ctx, "You are not the current ST for livetext")
 
         await self.helper.log(f"{ctx.author.mention} has run the EndGame Command for livetext")

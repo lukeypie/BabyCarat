@@ -19,9 +19,10 @@ class Signup(commands.Cog):
         self.bot.add_view(SignupView(helper))  # so it knows to listen for buttons on pre-existing signup forms
         self.helper = helper
 
-    @commands.command()
+    @commands.command(aliases = ["SendSignups"])
     async def ShowSignUps(self, ctx: commands.Context):
-        """Sends a DM listing the STs and players of the game."""
+        """Sends a DM listing the STs and players of the game.
+        """
         await utility.start_processing(ctx)
         st_role = self.helper.STRole
         st_names = [st.display_name for st in st_role.members]
@@ -40,11 +41,12 @@ class Signup(commands.Cog):
             await ctx.send(content=output_string, reference=ctx.message)
         await utility.finish_processing(ctx)
 
-    @commands.command()
+    @commands.command(aliases = ["Signups"])
     async def StartSignups(self, ctx: commands.Context):
-        """Posts a message listing the signed up players in the appropriate game channel, with buttons that players can use to sign up or leave the game.
+        """Posts a message listing the signed up players , with buttons that players can use to sign up or leave the game.
         If players are added or removed in other ways, may need to be updated explicitly with the appropriate button to
-         reflect those changes."""
+        reflect those changes.
+        """
         if ctx.channel == self.helper.GameChannel:
             await utility.start_processing(ctx)
             st_names = [st.display_name for st in self.helper.STRole.members] if len(self.helper.STRole.members) != 0 else ["unknown"]
@@ -90,7 +92,6 @@ class SignupView(nextcord.ui.View):
         st_role = self.helper.STRole
         #kibitz_role = self.helper.KibitzRole
 
-        # Sign up command
         if game_role in interaction.user.roles:
             await utility.dm_user(interaction.user, 
                                   "You are already signed up, click the refresh button if this is not visible.")
@@ -111,8 +112,6 @@ class SignupView(nextcord.ui.View):
         await interaction.response.send_message(content=f"{button.label} has been selected!",
                                                 ephemeral=True)
         game_role = self.helper.PlayerRole
-        st_role = self.helper.STRole
-
         if game_role not in interaction.user.roles:
             await utility.dm_user(interaction.user, "You haven't signed up")
         elif interaction.user.bot:
@@ -134,7 +133,6 @@ class SignupView(nextcord.ui.View):
     async def update_signup_sheet(self, signup_message: nextcord.Message):
         st_names = [st.display_name for st in self.helper.STRole.members] if len(self.helper.STRole.members) != 0 else ["unknown"]
 
-        # Update Message
         embed = nextcord.Embed(title="Livetext Game Sign Up",
                                description="Ran by " + ", ".join(st_names) +
                                             f"\nPress {green_square_emoji} to sign up for the game"
