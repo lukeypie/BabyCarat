@@ -143,5 +143,19 @@ class Grimoire(commands.Cog):
 
         await self.helper.log(f"{ctx.author.mention} has run the RemoveGrimoire Command on {member.mention} for livetext")
 
+    @commands.command()
+    async def FindGrimoire(self, ctx: commands.Context):
+        """Finds all users who cuurently have the stlivetext role on.
+        """
+        await utility.start_processing(ctx)
+        st_role = self.helper.STRole
+        sts = st_role.members
+        if len(sts) == 0:
+            await utility.dm_user(ctx.author, "There are no current livetext story tellers.")
+        else:
+            await utility.dm_user(ctx.author, "The current livetext story tellers are " + ", ".join([str(st) for st in sts]))
+        await utility.finish_processing(ctx)
+            
+
 def setup(bot: commands.Bot):
     bot.add_cog(Grimoire(bot, utility.Helper(bot)))
