@@ -536,7 +536,7 @@ class Townsquare(commands.Cog):
             self.update_storage()
             await self.log(f"{converted_nominator.alias} has nominated {converted_nominee.alias}")
     
-    @commands.command(aliases = "AddAcc")
+    @commands.command(aliases = ["AddAcc"])
     async def AddAccusation(self, ctx: commands.Context, accusation: str):
         """Add an accusation to your nomination.
          You must be the nominator or a storyteller for this.
@@ -583,7 +583,7 @@ class Townsquare(commands.Cog):
         else:
             await utility.deny_command(ctx, "You must be the ST or nominee to use this command")
 
-    @commands.command(aliases = "SetThreshold")
+    @commands.command(aliases = ["SetThreshold"])
     async def SetVoteThreshold(self, ctx: commands.Context, target: int):
         """Set the vote threshold to put a player on the block to the given number.
         You must be a storyteller for this.
