@@ -145,7 +145,8 @@ class Other(commands.Cog):
                                value="Can use `<sw` for short. Creates a new thread with the specified title and "
                                      "included members. Works exactly like carat's version.\n"
                                      "Usage examples: `<StartWhisper \"Vanilla JohnDoe\" @johndoe`,"
-                                     "\n`<sw \"group thread\" @johndoe @maryjane @BobJohnson`")
+                                     "\n`<sw \"group thread\" @johndoe @maryjane @BobJohnson`",
+                                inline=False)
         anyone_embed.add_field(name="<HelpMe",
                                value="Sends this message. Can be filtered by appending one of `all, anyone, st, mod, "
                                      "no-mod`. Default is `no-mod`\n"

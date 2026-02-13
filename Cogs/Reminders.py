@@ -96,8 +96,8 @@ class Reminders(commands.Cog):
             ping_st = "ping-st" in args
             no_player_ping = "no-player-ping" in args
             args = tuple(arg for arg in args if arg not in ["ping-st", "no-player-ping"])
-            if args:
-                await utility.deny_command(ctx, "At one reminder time is required")
+            if not args:
+                await utility.deny_command(ctx, "At least one reminder time is required")
                 return
             game_channel = self.helper.GameChannel
             event = "Whispers close"
